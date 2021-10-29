@@ -3,7 +3,7 @@ import datetime
 import spookySounds as spooky
 import httpControl as control
 
-verbose = False
+verbose = True
 sound = True
 devices = [6, 7, 8]  # last digit of ip address
 
@@ -12,16 +12,16 @@ devices = [6, 7, 8]  # last digit of ip address
 def run():
 
     print(f"Motion Sensor Program started {datetime.datetime.now()}")
-    laston = 0
-    lastoff = 0
-    lastCheckSensorTime = 0
+    laston = 0  # timestamp
+    lastoff = 0  # timestamp
+    lastCheckSensorTime = 0  # timestamp
     motionDetected = False
     switchStatus = False
     timeDelayCheckSensor = 3  # seconds
     timeDelayOperateSwitchOn = 20  # seconds
     timeDelayOperateSwitchOff = 10  # seconds
-    soundDelay = 10
-    soundLastOn = 0
+    soundDelay = 6  # seconds
+    soundLastOn = 0  # timestamp
 
     while True:
         time.sleep(1)  # keep program cpu usage low
@@ -49,7 +49,7 @@ def run():
             if sound:
                 if verbose:
                     print("play spooky sound")
-                spooky.playSpookySound()
+                spooky.playRandomSpookySound()
 
         # no motion -> turn off ----
         elif not motionDetected and switchStatus and (timeNow - laston) > timeDelayOperateSwitchOn:
@@ -60,18 +60,17 @@ def run():
                 if verbose:
                     print(f"shelly {device} status:  {switchStatus}")
             lastoff = timeNow
-
             if sound:
                 if verbose:
                     print("play spooky sound")
-                spooky.playSpookySound()
+                spooky.playRandomSpookySound()
 
         # if motion -> make sounds
         if motionDetected and sound and ((timeNow - soundLastOn) > soundDelay):
             if verbose:
                 print(f"play spooky sound while motion detected: {timeNow - soundLastOn}")
                 soundLastOn = timeNow
-                spooky.playSpookySound()
+                spooky.playRandomSpookySound()
 
 
 
