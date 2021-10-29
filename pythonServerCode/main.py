@@ -1,10 +1,10 @@
-
 import time
 import requests
 import datetime
 
 verbose = True
-
+devices = [6, 7, 8]  # last digit of ip address
+reqTimeout = 3
 
 def run():
     print(f"Motion Sensor Program started {datetime.datetime.now()}")
@@ -12,53 +12,55 @@ def run():
     lastoff = 0
     lastCheckSensorTime = 0
     motionDetected = False
-    switchStatus6 = False
+    switchStatus = False
     timeDelayCheckSensor = 3  # seconds
-    timeDelayOperateSwitch = 10  # seconds
-    # lightStatus = False
+    timeDelayOperateSwitchOn = 20  # seconds
+    timeDelayOperateSwitchOff = 10  # seconds
+
     while True:
         timeNow = int(time.time())  # seconds
         # check motion sensor
         if timeNow - lastCheckSensorTime > timeDelayCheckSensor:
-            # print(f"check sensor: {timeNow}")
+            if verbose:
+                print(f"check motion sensor: {timeNow}")
             lastCheckSensorTime = timeNow
             motionDetected = checkSensor()
             if verbose:
                 print(f"-- motion: {motionDetected}")
-        # if motion turn on -----
-        if motionDetected and not switchStatus6 and (timeNow - lastoff) > timeDelayOperateSwitch:
-            switchStatus6 = operateShelly(shellyNumber=6, switchStatus="on")
-            switchStatus8 = operateShelly(shellyNumber=8, switchStatus="on")
-            laston = timeNow
+                print(f"time since switch last on: {timeNow - laston} sec, switch last off: {timeNow - lastoff} sec")
+
+        # if motion -> turn on -----
+        if motionDetected and not switchStatus and (timeNow - lastoff) > timeDelayOperateSwitchOff:
             if verbose:
                 print("[*] lights ON")
-                print(f"shelly 6:  {switchStatus6}")
-                print(f"shelly 8:  {switchStatus8}")
-        # if no motion turn off ----
-        elif not motionDetected and switchStatus6 and (timeNow - laston) > timeDelayOperateSwitch:
-            switchStatus6 = operateShelly(shellyNumber=6, switchStatus="off")
-            switchStatus8 = operateShelly(shellyNumber=8, switchStatus="off")
-            lastoff = timeNow
+            for device in devices:
+                switchStatus = operateShelly(shellyNumber=device, switchStatus="on")
+                if verbose:
+                    print(f"shelly {device} status:  {switchStatus}")
+            laston = timeNow
+
+        # if no motion -> turn off ----
+        elif not motionDetected and switchStatus and (timeNow - laston) > timeDelayOperateSwitchOn:
             if verbose:
                 print("[*] lights OFF")
-                print(f"shelly 6:  {switchStatus6}")
-                print(f"shelly 8:  {switchStatus8}")
-        # if Error then end
-        if switchStatus6 == "error":
-            print("[*]  error  [*]")
-            # quit()
+            for device in devices:
+                switchStatus = operateShelly(shellyNumber=device, switchStatus="off")
+                if verbose:
+                    print(f"shelly {device} status:  {switchStatus}")
+            lastoff = timeNow
 
 
 ##  subFunctions ================================================================
 
 def checkSensor():
+
     try:
-        status = requests.get("http://10.42.0.23/api0", timeout=5).json()
+        status = requests.get("http://10.42.0.23/api0", timeout=reqTimeout).json()
     except Exception as e:
         print(f"motion sensor error: {e}")
         status = {"motionDetected": "0"}
     if verbose:
-        print(status)
+        print(f"motion sensor resp: {status}")
     motionBinary = status["motionDetected"]
     if motionBinary == "1":
         motion = True
@@ -68,16 +70,22 @@ def checkSensor():
 
 
 def operateShelly(shellyNumber, switchStatus=None):
+
     if switchStatus == None:
-        resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=toggle", timeout=5).json()
-        # print(resp)
-    else:
         try:
-            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn={switchStatus}", timeout=5).json()
+            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=toggle", timeout=reqTimeout).json()
         except Exception as e:
             print(f"shelly {shellyNumber} error: {str(e)[:14]}")
-            resp = {"ison":"False"}
-
+            resp = {"ison": "False"}
+    else:
+        try:
+            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn={switchStatus}",
+                                timeout=reqTimeout).json()
+        except Exception as e:
+            print(f"shelly {shellyNumber} error: {str(e)[:14]}")
+            resp = {"ison": "False"}
+    if verbose:
+        print(f"shelly resp: {resp}")
     switchStatus = resp["ison"]
     return switchStatus
 
@@ -90,7 +98,7 @@ if __name__ == '__main__':
 
 '''
 SHelly Examples:
-http://192.168.0.40/relay/0?turn=on Will switch output ON.
-http://192.168.0.40/relay/0?turn=on&timer=10 Will switch output ON for 10 sec.
-http://192.168.0.40/relay/0?turn=toggle Will switch the output On if OFF or vice versa
+http://10.42.0.40/relay/0?turn=on Will switch output ON.
+http://10.42.0.40/relay/0?turn=on&timer=10 Will switch output ON for 10 sec.
+http://10.42.0.40/relay/0?turn=toggle Will switch the output On if OFF or vice versa
 '''
