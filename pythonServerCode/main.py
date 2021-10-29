@@ -1,17 +1,28 @@
 import time
 import datetime
 import spookySounds as spooky
-import httpControl as control
+import httpControls as control
+import sys
 
-verbose = True
-sound = True
-devices = [6, 7, 8]  # last digit of ip address
+verbose = False
+sound = False
+devices = ["6", "7", "8"]  # last digit of ip address
 
+args = sys.argv
+if len(args) > 1:
+    if "-v" in args:
+        verbose = True
+    if "-s" in args:
+        sound = True
+    if "-h" in args:
+        print("possible args: -v:verbose, -s:output sound, -d:devices x,x,x")
+        quit()
+    if "-d" in args:
+        dIndex = args.index("-d")
+        devices = args[dIndex + 1].split(",")
 
 
 def run():
-
-    print(f"Motion Sensor Program started {datetime.datetime.now()}")
     laston = 0  # timestamp
     lastoff = 0  # timestamp
     lastCheckSensorTime = 0  # timestamp
@@ -23,6 +34,7 @@ def run():
     soundDelay = 6  # seconds
     soundLastOn = 0  # timestamp
 
+    print(f"Motion Sensor Program started {datetime.datetime.now()}")
     while True:
         time.sleep(1)  # keep program cpu usage low
         timeNow = int(time.time())  # seconds
@@ -71,7 +83,6 @@ def run():
                 print(f"play spooky sound while motion detected: {timeNow - soundLastOn}")
             soundLastOn = timeNow
             spooky.playRandomSpookySound()
-
 
 
 if __name__ == '__main__':

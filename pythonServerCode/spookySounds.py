@@ -1,8 +1,6 @@
 import os
 import random
 
-verbose = False
-
 
 def playRandomSpookySound():
     soundFiles = os.listdir(f"{os.getcwd()}/soundClips")
@@ -10,8 +8,10 @@ def playRandomSpookySound():
         soundFiles.pop(soundFiles.index("__pycache__"))
     randomSoundNumber = random.randint(0, len(soundFiles) - 1)
     soundClip = soundFiles[randomSoundNumber]
-    os.popen(f"timeout 4s nvlc {os.getcwd()}/soundClips/{soundClip} &>/dev/null")
-
+    if ".wav" in soundClip:
+        os.popen(f"timeout 4s nvlc {os.getcwd()}/soundClips/{soundClip} &>/dev/null")
+    else:
+        print(f"sound file error: {soundClip}")
 
 if __name__ == "__main__":
     playRandomSpookySound()
