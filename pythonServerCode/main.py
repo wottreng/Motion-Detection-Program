@@ -4,6 +4,7 @@ import datetime
 
 verbose = False
 
+
 def run():
     print(f"Motion Sensor Program started {datetime.datetime.now()}")
     laston = 0
