@@ -69,8 +69,8 @@ def run():
         if motionDetected and sound and ((timeNow - soundLastOn) > soundDelay):
             if verbose:
                 print(f"play spooky sound while motion detected: {timeNow - soundLastOn}")
-                soundLastOn = timeNow
-                spooky.playRandomSpookySound()
+            soundLastOn = timeNow
+            spooky.playRandomSpookySound()
 
 
 
