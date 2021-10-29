@@ -1,8 +1,9 @@
+
 import time
 import requests
 import datetime
 
-verbose = False
+verbose = True
 
 
 def run():
@@ -51,7 +52,13 @@ def run():
 ##  subFunctions ================================================================
 
 def checkSensor():
-    status = requests.get("http://10.42.0.23/api0").json()
+    try:
+        status = requests.get("http://10.42.0.23/api0", timeout=5).json()
+    except Exception as e:
+        print(f"motion sensor error: {e}")
+        status = {"motionDetected": "0"}
+    if verbose:
+        print(status)
     motionBinary = status["motionDetected"]
     if motionBinary == "1":
         motion = True
@@ -62,17 +69,14 @@ def checkSensor():
 
 def operateShelly(shellyNumber, switchStatus=None):
     if switchStatus == None:
-        resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=toggle").json()
-        # print(resp)
-    elif switchStatus == "on":
-        resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=on").json()
-        # print(resp)
-    elif switchStatus == "off":
-        resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=off").json()
+        resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=toggle", timeout=5).json()
         # print(resp)
     else:
-        resp = {"ison": "error"}
-        # print('error request')
+        try:
+            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn={switchStatus}", timeout=5).json()
+        except Exception as e:
+            print(f"shelly {shellyNumber} error: {str(e)[:14]}")
+            resp = {"ison":"False"}
 
     switchStatus = resp["ison"]
     return switchStatus
