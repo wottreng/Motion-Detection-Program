@@ -1,12 +1,16 @@
 import time
-import requests
 import datetime
+import spookySounds as spooky
+import httpControl as control
 
-verbose = True
+verbose = False
+sound = True
 devices = [6, 7, 8]  # last digit of ip address
-reqTimeout = 3
+
+
 
 def run():
+
     print(f"Motion Sensor Program started {datetime.datetime.now()}")
     laston = 0
     lastoff = 0
@@ -16,81 +20,59 @@ def run():
     timeDelayCheckSensor = 3  # seconds
     timeDelayOperateSwitchOn = 20  # seconds
     timeDelayOperateSwitchOff = 10  # seconds
+    soundDelay = 10
+    soundLastOn = 0
 
     while True:
+        time.sleep(1)  # keep program cpu usage low
         timeNow = int(time.time())  # seconds
         # check motion sensor
         if timeNow - lastCheckSensorTime > timeDelayCheckSensor:
             if verbose:
                 print(f"check motion sensor: {timeNow}")
             lastCheckSensorTime = timeNow
-            motionDetected = checkSensor()
+            motionDetected = control.checkSensor()
             if verbose:
                 print(f"-- motion: {motionDetected}")
                 print(f"time since switch last on: {timeNow - laston} sec, switch last off: {timeNow - lastoff} sec")
 
-        # if motion -> turn on -----
+        # motion -> turn on -----
         if motionDetected and not switchStatus and (timeNow - lastoff) > timeDelayOperateSwitchOff:
             if verbose:
-                print("[*] lights ON")
+                print("[*] lights ON [*]")
             for device in devices:
-                switchStatus = operateShelly(shellyNumber=device, switchStatus="on")
+                switchStatus = control.operateShelly(shellyNumber=device, switchStatus="on")
                 if verbose:
                     print(f"shelly {device} status:  {switchStatus}")
             laston = timeNow
+            soundLastOn = timeNow  # stop sound from playing twice
+            if sound:
+                if verbose:
+                    print("play spooky sound")
+                spooky.playSpookySound()
 
-        # if no motion -> turn off ----
+        # no motion -> turn off ----
         elif not motionDetected and switchStatus and (timeNow - laston) > timeDelayOperateSwitchOn:
             if verbose:
-                print("[*] lights OFF")
+                print("[*] lights OFF [*]")
             for device in devices:
-                switchStatus = operateShelly(shellyNumber=device, switchStatus="off")
+                switchStatus = control.operateShelly(shellyNumber=device, switchStatus="off")
                 if verbose:
                     print(f"shelly {device} status:  {switchStatus}")
             lastoff = timeNow
 
+            if sound:
+                if verbose:
+                    print("play spooky sound")
+                spooky.playSpookySound()
 
-##  subFunctions ================================================================
+        # if motion -> make sounds
+        if motionDetected and sound and ((timeNow - soundLastOn) > soundDelay):
+            if verbose:
+                print(f"play spooky sound while motion detected: {timeNow - soundLastOn}")
+                soundLastOn = timeNow
+                spooky.playSpookySound()
 
-def checkSensor():
-
-    try:
-        status = requests.get("http://10.42.0.23/api0", timeout=reqTimeout).json()
-    except Exception as e:
-        print(f"motion sensor error: {e}")
-        status = {"motionDetected": "0"}
-    if verbose:
-        print(f"motion sensor resp: {status}")
-    motionBinary = status["motionDetected"]
-    if motionBinary == "1":
-        motion = True
-    else:
-        motion = False
-    return motion
-
-
-def operateShelly(shellyNumber, switchStatus=None):
-
-    if switchStatus == None:
-        try:
-            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn=toggle", timeout=reqTimeout).json()
-        except Exception as e:
-            print(f"shelly {shellyNumber} error: {str(e)[:14]}")
-            resp = {"ison": "False"}
-    else:
-        try:
-            resp = requests.get(f"http://10.42.0.2{shellyNumber}/relay/0?turn={switchStatus}",
-                                timeout=reqTimeout).json()
-        except Exception as e:
-            print(f"shelly {shellyNumber} error: {str(e)[:14]}")
-            resp = {"ison": "False"}
-    if verbose:
-        print(f"shelly resp: {resp}")
-    switchStatus = resp["ison"]
-    return switchStatus
-
-
-## ===================================================================================
 
 
 if __name__ == '__main__':
