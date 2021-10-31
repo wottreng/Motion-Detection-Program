@@ -9,12 +9,14 @@ class halloweenLights:
     def __init__(self):
         self.verbose = False
         self.sound = False
-        self.devices = ["6", "7", "8"]  # last digit of ip address
+        self.devices = ["6", "7", "8", "9"]  # last digit of ip address
+        self.numberOfDevices = len(self.devices)
         self.timeDelayCheckSensor = 3  # seconds
         self.timeDelayOperateSwitchOn = 20  # seconds
         self.timeDelayOperateSwitchOff = 6  # seconds
         self.soundDelay = 6  # seconds
         self.randomLightTimes = False
+        self.randomNumberOfLightsOff = self.numberOfDevices
 
     def run(self):
         rate = 1
@@ -60,7 +62,12 @@ class halloweenLights:
                 # lights ----
                 if self.verbose:
                     print("[*] lights OFF [*]")
+                    if self.randomLightTimes:
+                        self.randomNumberOfLightsOff = random.randint(0, self.numberOfDevices-1)
+                        random.shuffle(self.devices)
                 for device in self.devices:
+                    if self.devices.index(device) >= self.randomNumberOfLightsOff:
+                        break
                     switchStatus = control.operateShelly(shellyNumber=device, switchStatus="off")
                     if self.verbose:
                         print(f"shelly {device} status:  {switchStatus}")
@@ -79,4 +86,7 @@ class halloweenLights:
                 soundLastOn = timeNow
                 spooky.playRandomSpookySound()
             if time.time() - timeNow < rate:
+                if self.verbose:
+                    print(f"[-] sleep for {time.time() - timeNow}")
                 time.sleep(time.time() - timeNow)  # keep cpu load down kinda like fps
+
