@@ -16,7 +16,7 @@ if __name__ == '__main__':
             lightShow.sound = True
             print("spooky sounds turned on")
         if "-h" in args:
-            print("possible args: -v:verbose, -s:output sound, -d:devices x,x,x")
+            print("possible args: -v:verbose, -s:output sound, -d:devices x,x,x,\n -toff: light off delay, -ton: light on delay, -r: random light on/off")
             quit()
         if "-d" in args:
             Index = args.index("-d")
@@ -28,7 +28,7 @@ if __name__ == '__main__':
             print(f"switch off time delay: {lightShow.timeDelayOperateSwitchOff}")
         if "-ton" in args:
             Index = args.index("-ton")
-            lightShow.timeDelayOperateSwitchOff = int(args[Index + 1])
+            lightShow.timeDelayOperateSwitchOn = int(args[Index + 1])
             print(f"switch on time delay: {lightShow.timeDelayOperateSwitchOn}")
         if "-r" in args:
             print("random light times on")
